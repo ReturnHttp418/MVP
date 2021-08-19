@@ -1,0 +1,62 @@
+<project name="Project">
+    <path id="pitest.path">
+        <!-- must currently include the test library on the tool classpath. this will be fixed in a future version-->
+        <pathelement location="lib/pitest-1.0.0-SNAPSHOT.jar" />
+        <pathelement location="lib/pitest-entry-1.0.0-SNAPSHOT.jar" />
+        <pathelement location="lib/pitest-ant-1.0.0-SNAPSHOT.jar" />
+        <pathelement location="lib/junit-4.11.jar"/>
+    </path>
+    <taskdef name="pitest" classname="org.pitest.ant.PitestTask" classpathref="pitest.path" />
+    <property name="classOutputDir" value="build" />
+    <target name="pit" >
+        <pitest pitClasspath="pitest.path" threads="2" classPath="classes/"
+                targetTests="com.fotbot.PartitioningTests" targetClasses="com.fotbot.*"
+                reportDir="pitReports" sourceDir="src" />
+    </target>
+
+    <target name="compile_orig">
+        <depend srcdir="tests" destdir="classes/"
+                 closure="yes"/>
+        <javac srcdir="src" destdir="classes/"
+               debug="true"
+               classpath="lib/junit-4.11.jar;lib/hamcrest-core-1.3.jar" includeantruntime="false"/>
+    </target>
+
+    <target name="compile_test" depends="compile_orig">
+        <mkdir dir="classes/tests" />
+        <depend srcdir="tests/" destdir="classes/tests/"
+                cache=".depcache/tests/" closure="yes"/>
+        <javac srcdir="tests/" destdir="classes/tests/"
+               debug="true"
+               classpath="lib/junit-4.11.jar;lib/hamcrest-core-1.3.jar;classes/"
+               includeantruntime="false"/>
+    </target>
+
+
+    <target name="test" depends="compile_test">
+        <mkdir dir="results"/>
+        <parallel threadCount="1" timeout="5000">
+            <sequential>
+                <junit printsummary="yes" fork="yes" haltonfailure="yes">
+                    <classpath>
+                        <pathelement path="classes/"/>
+                        <pathelement path="classes/tests/"/>
+                        <pathelement path="lib/junit-4.11.jar"/>
+                        <pathelement path="lib/hamcrest-core-1.3.jar"/>
+                    </classpath>
+                    <formatter type="plain"/>
+                    <test name="com.fotbot" todir="results"
+                          outfile="results"/>
+                </junit>
+            </sequential>
+        </parallel>
+    </target>
+
+    <target name="clean">
+        <delete dir="classes"/>
+        <delete dir=".depcache"/>
+        <delete><fileset dir="results" includes="**/*"/></delete>
+    </target>
+
+</project>
+
